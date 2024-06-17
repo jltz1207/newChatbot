@@ -1,0 +1,18 @@
+Resetting forgotten password:
+If you have forgotten your password, don't worry. You can easily reset it by using the 'Forgot Password' link provided on the login page. Click on the link and follow the instructions to reset your password securely.
+
+Changing profile picture:
+To change your profile picture, follow these steps:
+1. Log into your account.
+2. Go to your profile settings.
+3. Look for the 'Edit Profile' option and click on it.
+4. In the edit profile section, you will find an option to update your profile picture.
+5. Select the desired picture from your device and save the changes.
+
+Updating email address:
+If you need to change the email address associated with your account, here's what you need to do:
+1. Log into your account using your current credentials.
+2. Navigate to the 'Account Settings' section.
+3. Within the account settings, look for the 'Change Email' option and click on it.
+4. Enter your new email address and follow the prompts to verify and confirm the change.
+5. Once the process is complete, your email address will be updated successfully.

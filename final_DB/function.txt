@@ -1,0 +1,16 @@
+Sending a message:
+To send someone a message, follow these simple steps:
+1. Navigate to the person's profile page.
+2. On their profile, look for the 'Message' button.
+3. Click on the 'Message' button to open the chat window.
+4. Type your message in the chat input field.
+5. Press 'Send' or hit Enter to send your message.
+You're all set! The person will receive your message, and you can start chatting with them.
+
+Blocking a user:
+If you encounter someone you want to block, you can easily do so from their profile page. Here's how:
+1. Go to the profile page of the person you wish to block.
+2. On their profile, you should see a 'Block' option or button.
+3. Click on the 'Block' option to initiate the blocking process.
+4. Confirm your action when prompted to block the user.
+Once you've completed these steps, the user will be blocked, and they will no longer be able to interact with you or see your profile.
