@@ -11,27 +11,22 @@ import openai
 from langchain_openai import ChatOpenAI
 from langchain.docstore.document import Document
 import os
-from langchain_google_vertexai import ChatVertexAI, VertexAI
 import vertexai
 from langchain.schema import ChatMessage
 from openai import AzureOpenAI
 from langchain_openai import AzureChatOpenAI
+import logging
+from InterestExtract import extract_interest
+from PersonalExtract import extract_personality
+from AiMatch import update_user_keywords, update_user_details, find_best_matches
+from faceReg import find_similar_face
+import base64
+import io
+import face_recognition
+from PIL import Image
 
-# credential_path = r"D:\download\refreshing-code-426111-t6-f6d56102511b.json"
-# if not os.path.exists(credential_path):
-#     raise Exception(f"Credentials file not found at {credential_path}")
-# os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credential_path
-# PROJECT_ID = "refreshing-code-426111-t6"  # @param {type:"string"}
-# REGION = "asia-east2"  # @param {type:"string"}
-# vertexai.init(project=PROJECT_ID, location=REGION)
-# llm = ChatVertexAI(
-#     model="gemini-pro",
-#     temperature=0,
-#     max_tokens=None,
-#     max_retries=6,
-#     stop=None,
-# )
 app = Flask(__name__)
+#logging.basicConfig(level=logging.DEBUG)
 folder_path = "db"
 
 llm =  AzureChatOpenAI(
@@ -93,24 +88,49 @@ def askAsistant():
     response_answer = {"answer": result["answer"]}
     return jsonify(response_answer), 201
 
-@app.route("/askCupid", methods=["POST"])
+@app.route("/askCupid", methods=["POST"]) #only change the keywords
 def askCupid():
-    print("Post askAsistant called")
+    print("Post askCupid called")
     json_content = request.json
-    query = json_content.get("query") 
-
     chat_history = json_content.get("history", [])
+    categoryId = json_content.get("categoryId")
+    userId = json_content.get("userId")
+    user_objects = [obj for obj in chat_history if obj.get("role") == "user"]
+    
+    response_answer = {}
+    if user_objects and categoryId is not None:
+        last_user_object = user_objects[-1]
+        user_query = last_user_object.get("content", "")
+        if categoryId == 1:
+            keywords = extract_interest(user_query)
+        elif categoryId ==2 or categoryId ==3:
+            keywords = extract_personality(user_query)
+        else:
+            print("categoryId is out of range")
+        update_user_keywords(userId, categoryId, keywords)
+        response_answer["keywords"] = keywords
+    elif categoryId is None:
+        print("No categoryId found ")
+    else: 
+        print("No user object found in chat_history")
 
-    # messages = [
-    #     {"type": message["role"], "content": message["content"]}
-    #     for message in chat_history
-    # ]
-
-   
     result = llm.invoke(chat_history)
-
-    response_answer = {"answer": result.content}
+    response_answer["answer"] =  result.content
     return jsonify(response_answer), 201
+
+@app.route("/updateDetails", methods=["POST"]) #only change the keywords
+def updateDetails():
+    print("Post /updateDetails called")
+    json_content = request.json
+    userId = json_content.get("userId")
+    userDetails = json_content.get("userDetails")
+    update_user_details(userId, userDetails)
+    response_answer = {"response":"Updated successfully"}
+    return jsonify(response_answer), 201
+
+
+
+
 
 
 @app.route("/text", methods=["POST"]) # handle upload
@@ -144,7 +164,89 @@ def textPost():
     }
     return response
 
+
+@app.route("/genAiResponse", methods=["POST"])
+def genAiResponse():
+    print("Post genAiResponse called")
+    json_content = request.json
+    prompt = json_content.get("prompt") 
+
+    messages = [{
+    "role" : "system",
+    "content":prompt
+    }]
+   
+   
+    result = llm.invoke(messages)
+
+    response_answer = {"answer": result.content}
+    return jsonify(response_answer), 201
+
+
+@app.route("/genAiBio", methods=["POST"])
+def genAiBio():
+    print("Post /genAiBio called")
+    json_content = request.json
+    history = json_content.get("history") 
+    result = llm.invoke(history)
+    response_answer = {"answer": result.content}
+    return jsonify(response_answer), 201
+
+@app.route("/getKeywords", methods=["POST"])
+def getKeywords():
+    print("Post getKeywords called")
+    json_content = request.json
+    user_query = json_content.get("passage")
+    categoryId = json_content.get("categoryId")
+
+    if categoryId == 1:
+        keywords = extract_interest(user_query)
+    elif categoryId ==2 or categoryId ==3:
+        keywords = extract_personality(user_query)
+    
+    print("Extracted keywords:", keywords)
+    response_answer = {"keywords":keywords }
+    return jsonify(response_answer), 201
+
+@app.route("/getMatches", methods=["POST"])
+def getMatches():
+    print("Post /getMatches called")
+    json_content = request.json
+    userId = json_content.get("userId")
+    otherUserIds = json_content.get("otherUserIds")
+    expectedMinAge = json_content.get("expectedMinAge") #null
+    expectedMaxAge = json_content.get("expectedMaxAge") #null
+    weight = json_content.get("weight") #null
+    matches = find_best_matches(userId,otherUserIds,weight, expectedMinAge, expectedMaxAge)
+
+    response_answer = {"sortedId":matches}
+    return jsonify(response_answer), 201
+
+@app.route("/genFaceMatch", methods=["POST"]) #only change the keywords
+def genFaceMatch():
+    print("Post /genFaceMatch called")
+    
+    # getting input
+    json_content = request.json
+    user_photos_database = json_content.get("user_photos_database")
+    newImage_base64 = json_content.get("newImage_base64")
+
+    # find match
+    matchedId = find_similar_face(newImage_base64,user_photos_database )
+        
+    
+    print(matchedId)
+    if matchedId == None: # no face is detected 
+        return jsonify({'error': 'No faces detected in the provided image'}), 400
+   
+    response_answer = {"answer":matchedId}
+    return jsonify(response_answer), 201
+
+
+
 def start_app():
     app.run(debug=True)
 if(__name__ =="__main__"):
     start_app()
+
+    
